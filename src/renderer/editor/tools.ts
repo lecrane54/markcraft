@@ -97,7 +97,7 @@ export class Tools {
     const c = doc.canvas
     c.on('mouse:down', (o) => this.down(o))
     c.on('mouse:move', (o) => this.move(o))
-    c.on('mouse:up', () => this.up())
+    c.on('mouse:up', (o) => this.up(o))
     c.on('path:created', ({ path }) => {
       path.set({ snapKind: 'pen', perPixelTargetFind: true } as Partial<Path>)
       this.onCommit()
@@ -285,7 +285,10 @@ export class Tools {
     }
   }
 
-  private up(): void {
+  private up(o: TPointerEventInfo): void {
+    // Moves are handled once per frame, so a quick release can arrive before the
+    // last one; finish the shape exactly where the button came up.
+    if (this.drag) this.move(o)
     const drag = this.drag
     this.drag = null
     if (!drag?.obj) return

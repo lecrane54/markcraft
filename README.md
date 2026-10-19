@@ -1,122 +1,173 @@
 # Markcraft
 
-A menu-bar screen capture tool: region, window and full-screen screenshots, an
-annotation editor, scrolling capture, text grabbing (OCR) and screen recording.
-Built with Electron + TypeScript.
+**Capture, mark up and share your screen.** Markcraft is a free, open-source
+screenshot and screen-recording tool for macOS, Windows and Linux. It lives in
+your menu bar or system tray: press a shortcut, drag over what you need, then
+annotate it with arrows, boxes, numbered steps, highlights and redactions.
 
-## Run it
+[![Build](https://github.com/lecrane54/markcraft/actions/workflows/build.yml/badge.svg)](https://github.com/lecrane54/markcraft/actions/workflows/build.yml)
 
-```sh
-npm install
-npx install-electron   # npm blocks install scripts by default; this fetches the Electron binary
-npm run dev            # hot-reloading development build
-```
+![The Markcraft editor with a highlighted heading, a boxed table row, a labelled arrow, numbered steps and a pixelated email address](docs/screenshots/editor.png)
 
-Markcraft lives in the menu bar (the viewfinder icon). On macOS, the first capture
-asks for **Screen & System Audio Recording** permission. In development the
-permission belongs to **Electron**, not Markcraft. Grant it in System Settings →
-Privacy & Security, then restart the app.
+## Features
 
-## Shortcuts
+- **Capture anything:** a region you drag out, a single window, or the whole
+  screen. The screen freezes while you select, with a magnifier and live pixel
+  size for precise edges.
+- **Annotate:** arrows, lines, rectangles, ellipses, text, auto-numbered steps,
+  highlighter, freehand pen, pixelate for redacting sensitive details, and crop.
+  Full undo and redo.
+- **Scrolling capture:** select a scrolling area, scroll, and get one tall image.
+  Sticky headers and footers appear once, not on every screen.
+- **Grab text (OCR):** pull the text out of any capture to copy and paste. It
+  works offline, so nothing leaves your machine.
+- **Screen recording:** record an area or a whole screen, with optional
+  microphone narration and a webcam bubble. Saves as MP4.
+- **Copy, save or keep editing:** copy straight to the clipboard, export PNG or
+  JPEG, or save a `.markcraft` file to change the annotations later.
 
-| Shortcut | Action |
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/select-region.png" alt="Selecting a region: the frozen screen dims, the selection shows its size in pixels, and a magnifier follows the cursor"></td>
+    <td width="50%"><img src="docs/screenshots/ocr.png" alt="The Grab Text panel beside the editor, showing text extracted from the capture"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Select a region on the frozen screen</sub></td>
+    <td align="center"><sub>Grab the text from a capture</sub></td>
+  </tr>
+</table>
+
+## Download
+
+Get the latest installer from
+**[Releases](https://github.com/lecrane54/markcraft/releases/latest)**:
+
+| Platform | File |
 | --- | --- |
-| ⌃⇧1 | Capture region: drag a rectangle, click for the whole screen, Esc to cancel |
-| ⌃⇧2 | Capture window: pick from a grid of open windows |
-| ⌃⇧3 | Capture the screen under the pointer |
-| ⌃⇧4 | Scrolling capture: select the scrolling area, click **Start**, scroll slowly, then **Done** |
-| ⌃⇧5 | Record screen: select an area, toggle mic/webcam, then **Record** |
+| macOS, Apple Silicon (M1 and later) | `Markcraft-…-mac-arm64.dmg` |
+| macOS, Intel | `Markcraft-…-mac-x64.dmg` |
+| Windows (most PCs) | `Markcraft-…-win-x64.exe` |
+| Windows on ARM | `Markcraft-…-win-arm64.exe` |
+| Linux | `Markcraft-…-linux-x86_64.AppImage` (or `-arm64`) |
 
-(⌘⇧3/4/5 are left alone because macOS uses them for its own screenshots.)
+Releases aren't code-signed yet, so the first launch needs one extra step:
+
+- **macOS:** right-click Markcraft in Applications → **Open** → **Open**. On
+  your first capture, allow Markcraft under System Settings → Privacy & Security
+  → **Screen & System Audio Recording**, then reopen it.
+- **Windows:** if SmartScreen says "Windows protected your PC", click
+  **More info → Run anyway**.
+- **Linux:** make the AppImage executable (`chmod +x Markcraft-*.AppImage`) and
+  run it.
+
+## Using Markcraft
+
+Use the shortcuts, or click the viewfinder icon in the menu bar or system tray.
+
+| macOS | Windows / Linux | Action |
+| --- | --- | --- |
+| ⌃⇧1 | Ctrl+Shift+1 | Capture a region. Drag a rectangle, click for the whole screen, Esc to cancel. |
+| ⌃⇧2 | Ctrl+Shift+2 | Capture a window you pick from a list |
+| ⌃⇧3 | Ctrl+Shift+3 | Capture the screen under the pointer |
+| ⌃⇧4 | Ctrl+Shift+4 | Scrolling capture. Select the area, click **Start**, scroll down slowly, click **Done**. |
+| ⌃⇧5 | Ctrl+Shift+5 | Record the screen. Select an area, choose mic/webcam, click **Record**. |
+
+On macOS, ⌘⇧3/4/5 stay with the built-in screenshot tool.
 
 ### Editor
 
-| Key | Tool |
+| Key | Tool | | Key | Tool |
+| --- | --- | --- | --- | --- |
+| V | Select / move | | N | Numbered step |
+| A | Arrow | | H | Highlighter |
+| L | Line | | P | Pen |
+| R | Rectangle | | B | Pixelate (redact) |
+| E | Ellipse | | C | Crop (drag, then Enter) |
+| T | Text | | Delete | Remove the selection |
+
+| macOS | Windows / Linux | Action |
+| --- | --- | --- |
+| ⌘Z / ⇧⌘Z | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+| ⌘C | Ctrl+C | Copy the annotated image |
+| ⇧⌘T | Ctrl+Shift+T | Grab text |
+| ⌘S / ⇧⌘S | Ctrl+S / Ctrl+Shift+S | Save / Save As (PNG, JPEG or editable `.markcraft`) |
+| ⌘0 / ⌘9 | Ctrl+0 / Ctrl+9 | Actual size / fit to window |
+
+### Where files go
+
+- Every capture's original is kept in `Pictures/Markcraft`. You can turn this off
+  in the tray menu under **Auto-save Captures**.
+- Recordings are saved to `Movies/Markcraft` (macOS) or `Videos/Markcraft`
+  (Windows/Linux).
+
+## Status
+
+Markcraft is new (0.1). Capture, the editor, OCR and packaging are tested on
+macOS. Windows and Linux builds are produced by CI but haven't had much hands-on
+testing yet, so [bug reports](https://github.com/lecrane54/markcraft/issues) are
+very welcome.
+
+Known gaps:
+
+- Scrolling capture is manual and downward-only. You scroll; Markcraft doesn't
+  scroll for you yet.
+- No video trimming yet. Recordings can be played, saved and shown in the folder.
+- No system-audio recording yet, only the microphone.
+- On Linux under Wayland, capture goes through the desktop's screen-sharing
+  prompt and global shortcuts have to be set in your desktop settings. X11 works
+  normally. Some desktops need an AppIndicator extension for the tray icon.
+
+## Building from source
+
+Requires Node.js 22.12 or newer.
+
+```sh
+git clone https://github.com/lecrane54/markcraft.git
+cd markcraft
+npm install
+npx install-electron   # npm skips install scripts by default; this fetches Electron
+npm run dev            # run with hot reload
+```
+
+When running from source on macOS, screen-recording permission goes to
+**Electron** rather than Markcraft.
+
+| Command | What it does |
 | --- | --- |
-| V | Select / move |
-| A | Arrow |
-| L | Line |
-| R | Rectangle |
-| E | Ellipse |
-| T | Text |
-| N | Step number (auto-increments) |
-| H | Highlighter |
-| P | Pen |
-| B | Pixelate (redact) |
-| C | Crop (drag, then Enter) |
+| `npm test` | Unit tests: scrolling-capture stitcher, recording path |
+| `npm run typecheck` | TypeScript check |
+| `npm run build && npx electron test/smoke.cjs out.png` | Drives the real editor: draws with every tool, checks undo/redo by comparing pixels |
+| `npm run build && npm run screenshots` | Regenerates the README screenshots in `docs/screenshots/` |
+| `npm run pack` | Unpacked app for this machine, for a quick test |
+| `npm run dist:mac:unsigned` / `dist:win` / `dist:linux` | Installers in `dist/`. All three can be built on a Mac. |
 
-⌘Z / ⇧⌘Z undo/redo, ⌘C or ⇧⌘C copies the annotated image, ⇧⌘T grabs text,
-⌘S / ⇧⌘S save. Save as **PNG/JPEG** to flatten, or as **.markcraft** to keep the
-annotations editable. Every capture's original is also auto-saved to
-`~/Pictures/Markcraft` (turn this off in the tray menu). Recordings go to
-`~/Movies/Markcraft`.
+### Releases
 
-## How it works
+Every push to `main` runs [the build workflow](.github/workflows/build.yml), which
+type-checks, tests and builds each platform on its own OS. Pushing a version tag
+(`git tag v0.2.0 && git push --tags`) also creates a draft GitHub release with all
+the installers attached.
 
-| Feature | Implementation |
+Signing is optional and switches on when these repository secrets exist:
+
+- **macOS** (removes the right-click → Open step): `MAC_CERT_P12_BASE64`,
+  `MAC_CERT_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
+  Requires the Apple Developer Program.
+- **Windows** (removes the SmartScreen warning): `WIN_CERT_PFX_BASE64`,
+  `WIN_CERT_PASSWORD`.
+
+### How it works
+
+| Area | Implementation |
 | --- | --- |
-| Capture | `desktopCapturer` thumbnails at native resolution freeze each display; a full-screen overlay per display handles selection, and the main process crops from the lossless image. |
-| Window capture | `getDisplayMedia` on the chosen window (answered by `setDisplayMediaRequestHandler`), keeping one full-resolution frame. |
-| Editor | Fabric.js canvas. The capture is a locked background image, and annotations are objects in image-pixel coordinates. Undo is snapshot-based. |
-| Scrolling capture | Samples the region every 100 ms and matches row signatures to find the scroll offset. Sticky headers/footers are detected and kept once (`src/renderer/scroll/stitcher.ts`). |
-| OCR | `tesseract.js` in the main process, with English data bundled so it works offline. The engine warms up when an editor opens and shuts down after 5 idle minutes. |
-| Recording | The display stream is cropped onto a canvas, with an optional mirrored circular webcam and mic audio, then `MediaRecorder` (MP4/H.264 when supported, otherwise WebM). Chunks stream to disk. |
+| Capture | `desktopCapturer` freezes each display at native resolution. A preloaded, hidden overlay window per display handles selection, so the overlay appears in about 10 ms. The crop comes from the lossless image. |
+| Window capture | `getDisplayMedia` on the chosen window, keeping one full-resolution frame |
+| Editor | [Fabric.js](https://fabricjs.com) canvas. The capture is a locked background, and annotations are objects in image-pixel coordinates. Undo snapshots refer to images instead of copying them. |
+| Scrolling capture | Samples the area every 100 ms and matches per-row signatures to find each scroll offset, detecting sticky headers and footers ([`stitcher.ts`](src/renderer/scroll/stitcher.ts)) |
+| OCR | [tesseract.js](https://github.com/naptha/tesseract.js) with bundled English data. The engine warms up when an editor opens and unloads after 5 idle minutes. |
+| Recording | `MediaRecorder` (MP4/H.264). A whole-screen recording goes straight to the encoder; crops and the webcam bubble are composited on a canvas. Chunks stream to disk. |
 
-## Scripts
-
-- `npm test`: stitcher unit tests (Node's built-in test runner)
-- `npm run typecheck`
-- `npm run build && npx electron test/smoke.cjs out.png`: opens a generated image in the editor, draws with every shape tool, checks undo and redo by comparing canvas pixels, and screenshots the window
-- `npm run dist`: package with electron-builder
-
-## Packaging
-
-electron-builder turns the same code into each platform's installer. Output goes to `dist/`.
-
-| Command | Produces |
-| --- | --- |
-| `npm run pack` | Unpacked app for this machine (quick test) |
-| `npm run dist:mac:unsigned` | `.dmg` for Apple Silicon and Intel, ad-hoc signed |
-| `npm run dist:mac` | Same, signed and notarized (needs a Developer ID, see below) |
-| `npm run dist:win` | NSIS installer `.exe`, one each for x64 and arm64 |
-| `npm run dist:linux` | `.AppImage` (x64, arm64) |
-
-All of them can be built from a Mac. `.github/workflows/build.yml` builds each one on
-its own OS on every push and attaches them to a draft GitHub release when you push
-a `v*` tag.
-
-The app icon is generated from `build/icon.svg`. Run `npm run icon` after editing it.
-
-To keep downloads small, builds ship only English Electron UI strings
-(`electronLanguages`) and only the three tesseract engine variants Node actually
-loads. The `files` excludes in `package.json` list exactly what's dropped.
-
-### Signing
-
-Unsigned apps still work, but users will see warnings:
-
-- **macOS:** without a Developer ID, the app is ad-hoc signed. Other people's Macs
-  will block it until they right-click → Open (or allow it in Privacy & Security).
-  Screen-recording permission also resets with each new build. To sign and notarize, join the
-  Apple Developer Program, then set the `MAC_CERT_P12_BASE64`, `MAC_CERT_PASSWORD`,
-  `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` repo secrets.
-- **Windows:** unsigned installers show a SmartScreen "unknown publisher" warning.
-  Add a code-signing certificate as `WIN_CERT_PFX_BASE64` / `WIN_CERT_PASSWORD`, or
-  use Azure Trusted Signing.
-- **Linux:** no signing needed.
-
-### Platform notes
-
-- **Windows:** everything works, including the global shortcuts.
-- **Linux:** works on X11. On Wayland, apps can't take screenshots or register
-  global shortcuts directly. Capture goes through the desktop's screen-sharing
-  prompt, and you'll need to bind the shortcuts in your desktop settings. Some
-  desktops need an AppIndicator extension for the tray icon.
-
-## Not yet built
-
-- Auto-scrolling for scrolling capture (needs a native input module); scrolling
-  is manual and downward-only for now
-- Video trimming; the player only plays, saves and reveals the file
-- System-audio recording
-- Hover-to-highlight windows in the region overlay (use ⌃⇧2 for windows)
+The app icon is generated from [`build/icon.svg`](build/icon.svg) with
+`npm run icon`. Builds ship only English Electron UI strings and the three
+tesseract engine variants Node actually loads, which keeps installers around
+100–125 MB.

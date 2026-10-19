@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Acme Projects</title>
+    <!-- A fictional app used as the "captured screen" in README screenshots.
+         Laid out at fixed coordinates so scripts/screenshots.cjs knows where to annotate. -->
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      body {
+        width: 1280px; height: 800px; overflow: hidden;
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        color: #1f2430; background: #f5f6fa;
+      }
+      header {
+        position: absolute; inset: 0 0 auto 0; height: 56px;
+        display: flex; align-items: center; padding: 0 24px; gap: 24px;
+        background: #fff; border-bottom: 1px solid #e3e5ec;
+      }
+      .logo { font-weight: 700; font-size: 18px; color: #3b5bdb; width: 172px; }
+      .search { width: 420px; height: 34px; border-radius: 8px; background: #f0f1f5; color: #8a90a2; padding: 7px 14px; }
+      .user { margin-left: auto; display: flex; align-items: center; gap: 10px; color: #4a5064; }
+      .avatar { width: 30px; height: 30px; border-radius: 50%; background: #c5d0fa; }
+      nav { position: absolute; top: 56px; left: 0; bottom: 0; width: 220px; padding: 24px 16px; background: #fff; border-right: 1px solid #e3e5ec; }
+      nav div { height: 32px; margin-bottom: 8px; padding: 6px 12px; border-radius: 6px; color: #4a5064; }
+      nav .on { background: #edf1ff; color: #3b5bdb; font-weight: 600; }
+      main { position: absolute; top: 56px; left: 220px; right: 0; bottom: 0; padding: 24px 32px; }
+      h1 { font-size: 28px; line-height: 40px; }
+      .new { position: absolute; top: 24px; right: 32px; width: 140px; height: 36px; border-radius: 8px; background: #3b5bdb; color: #fff; font-weight: 600; text-align: center; line-height: 36px; }
+      .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+      .card { height: 90px; padding: 14px 18px; border-radius: 10px; background: #fff; border: 1px solid #e3e5ec; }
+      .card b { display: block; font-size: 26px; margin-top: 4px; }
+      .card span { color: #7a8093; }
+      table { width: 100%; margin-top: 28px; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e3e5ec; }
+      th, td { height: 44px; padding: 0 16px; text-align: left; border-bottom: 1px solid #eef0f4; }
+      th { color: #7a8093; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .done { background: #e3f6e8; color: #2b8a3e; }
+      .prog { background: #e7eefe; color: #3b5bdb; }
+      .late { background: #fde8e8; color: #c92a2a; }
+      .todo { background: #f1f3f5; color: #5c6170; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">Acme Projects</div>
+      <div class="search">Search tasks, people, files…</div>
+      <div class="user">alex.rivera@example.com <div class="avatar"></div></div>
+    </header>
+    <nav>
+      <div class="on">Inbox</div>
+      <div>Today</div>
+      <div>Projects</div>
+      <div>Reports</div>
+      <div>Settings</div>
+    </nav>
+    <main>
+      <h1>Sprint 14</h1>
+      <div class="new">+ New task</div>
+      <div class="cards">
+        <div class="card"><span>Open tasks</span><b>18</b></div>
+        <div class="card"><span>Completed this week</span><b>27</b></div>
+        <div class="card"><span>Overdue</span><b>2</b></div>
+      </div>
+      <table>
+        <tr><th>Task</th><th>Owner</th><th>Due</th><th>Status</th></tr>
+        <tr><td>Write onboarding checklist</td><td>Priya</td><td>Oct 12</td><td><span class="pill done">Done</span></td></tr>
+        <tr><td>Update pricing page copy</td><td>Marco</td><td>Oct 18</td><td><span class="pill prog">In progress</span></td></tr>
+        <tr><td>Fix export to CSV</td><td>Alex</td><td>Oct 15</td><td><span class="pill late">Overdue</span></td></tr>
+        <tr><td>Plan Q4 roadmap review</td><td>Sam</td><td>Oct 24</td><td><span class="pill todo">To do</span></td></tr>
+        <tr><td>Accessibility audit: settings</td><td>Priya</td><td>Oct 28</td><td><span class="pill todo">To do</span></td></tr>
+        <tr><td>Release notes for 2.3</td><td>Marco</td><td>Oct 30</td><td><span class="pill todo">To do</span></td></tr>
+      </table>
+    </main>
+  </body>
+</html>
