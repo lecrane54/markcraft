@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <title>Capture Area</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+      }
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        border: 3px dashed #ff7a2f;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body></body>
+</html>

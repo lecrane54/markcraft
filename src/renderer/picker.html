@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>Capture a Window</title>
+    <link rel="stylesheet" href="./common/base.css" />
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+      }
+      header h1 {
+        flex: 1;
+        margin: 0;
+        font-size: 15px;
+      }
+      #grid {
+        flex: 1;
+        overflow: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        padding: 18px;
+        align-content: start;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        text-align: left;
+        background: var(--panel);
+      }
+      .card:hover {
+        border-color: var(--accent);
+      }
+      .thumb {
+        aspect-ratio: 16 / 10;
+        display: grid;
+        place-items: center;
+        background: var(--panel-2);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .thumb img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      .name {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+      .name img {
+        width: 16px;
+        height: 16px;
+        flex: none;
+      }
+      .name span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #empty {
+        padding: 40px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Click a window to capture it</h1>
+      <button id="refresh">Refresh</button>
+      <button id="cancel">Cancel</button>
+    </header>
+    <div id="grid"></div>
+    <div id="empty" hidden></div>
+    <script type="module" src="./picker/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>Recording</title>
+    <link rel="stylesheet" href="./common/base.css" />
+    <style>
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--muted);
+        flex: none;
+      }
+      .dot.live {
+        background: #e03131;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      .dot.paused {
+        background: #f2c94c;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      #compositor {
+        position: fixed;
+        left: -10000px;
+        top: 0;
+      }
+    </style>
+  </head>
+  <body class="bar">
+    <div class="bar-inner">
+      <span id="dot" class="dot"></span>
+      <span id="status" class="bar-status">Ready to record</span>
+      <label class="toggle" id="mic-toggle"><input id="mic" type="checkbox" /> Mic</label>
+      <label class="toggle" id="cam-toggle"><input id="cam" type="checkbox" /> Webcam</label>
+      <button id="record" class="primary">Record</button>
+      <button id="pause" hidden>Pause</button>
+      <button id="stop" class="primary" hidden>Stop</button>
+      <button id="cancel" class="danger">Cancel</button>
+    </div>
+    <canvas id="compositor"></canvas>
+    <script type="module" src="./recorder/main.ts"></script>
+  </body>
+</html>

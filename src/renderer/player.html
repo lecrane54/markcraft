@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; media-src 'self' markcraft-media:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>Recording</title>
+    <link rel="stylesheet" href="./common/base.css" />
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      main {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        place-items: center;
+        background: #000;
+      }
+      video {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: var(--panel);
+        border-top: 1px solid var(--border);
+      }
+      #name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main><video id="video" controls autoplay></video></main>
+    <footer>
+      <span id="name"></span>
+      <button id="reveal">Show in Folder</button>
+      <button id="save" class="primary">Save As…</button>
+    </footer>
+    <script type="module" src="./player/main.ts"></script>
+  </body>
+</html>

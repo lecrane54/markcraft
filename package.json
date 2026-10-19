@@ -1,0 +1,132 @@
+{
+  "name": "markcraft",
+  "productName": "Markcraft",
+  "version": "0.1.0",
+  "description": "Screen capture, annotation, scrolling capture, OCR and screen recording.",
+  "main": "./out/main/index.js",
+  "author": "klefe",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "dist": "electron-vite build && electron-builder",
+    "icon": "electron scripts/make-icon.cjs",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win --x64 && electron-builder --win --arm64",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "pack": "electron-vite build && electron-builder --dir -c.mac.identity=- -c.mac.hardenedRuntime=false",
+    "dist:mac:unsigned": "electron-vite build && electron-builder --mac -c.mac.identity=- -c.mac.hardenedRuntime=false"
+  },
+  "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "tesseract.js": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "6.0.0",
+    "fabric": "7.4.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "build": {
+    "appId": "com.klefe.markcraft",
+    "productName": "Markcraft",
+    "copyright": "Copyright © 2026 klefe",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "!node_modules/tesseract.js-core/*.wasm.js",
+      "!node_modules/tesseract.js-core/tesseract-core.{js,wasm}",
+      "!node_modules/tesseract.js-core/tesseract-core-simd.{js,wasm}",
+      "!node_modules/tesseract.js-core/tesseract-core-relaxedsimd.{js,wasm}",
+      "!node_modules/@tesseract.js-data/**"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "fileAssociations": [
+      {
+        "ext": "markcraft",
+        "name": "Markcraft Capture",
+        "role": "Editor"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Markcraft uses the camera to add an optional webcam overlay to screen recordings.",
+        "NSMicrophoneUsageDescription": "Markcraft uses the microphone to record narration with screen recordings."
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Graphics",
+      "synopsis": "Screen capture, annotation and recording"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "resetAdHocDarwinSignature": true
+    },
+    "electronLanguages": [
+      "en",
+      "en-US"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/@tesseract.js-data/eng/4.0.0_best_int",
+        "to": "tessdata",
+        "filter": [
+          "*.traineddata.gz"
+        ]
+      }
+    ]
+  },
+  "allowScripts": {
+    "canvas": false,
+    "electron-winstaller": false,
+    "tesseract.js": false
+  }
+}

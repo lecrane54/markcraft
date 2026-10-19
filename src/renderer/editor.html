@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>Markcraft</title>
+    <link rel="stylesheet" href="./common/base.css" />
+    <link rel="stylesheet" href="./editor/editor.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="group" id="tools" role="toolbar" aria-label="Tools"></div>
+      <div class="divider"></div>
+      <div class="group" id="swatches" aria-label="Colour"></div>
+      <label class="field" title="Stroke width">
+        <span>Width</span>
+        <input id="width" type="range" min="1" max="24" value="5" />
+      </label>
+      <label class="field" title="Text size">
+        <span>Text</span>
+        <input id="font-size" type="range" min="12" max="120" value="36" />
+      </label>
+      <div class="spacer"></div>
+      <div class="group" id="actions"></div>
+    </header>
+
+    <div id="crop-bar" class="notice" hidden>
+      <span>Drag to adjust the crop area.</span>
+      <button id="crop-apply" class="primary">Crop</button>
+      <button id="crop-cancel">Cancel</button>
+    </div>
+
+    <main id="stage">
+      <div id="canvas-wrap"><canvas id="canvas"></canvas></div>
+    </main>
+
+    <aside id="ocr-panel" hidden>
+      <div class="panel-head">
+        <strong>Grabbed text</strong>
+        <button id="ocr-close" title="Close">✕</button>
+      </div>
+      <textarea id="ocr-text" spellcheck="false"></textarea>
+      <div class="panel-foot">
+        <span id="ocr-status"></span>
+        <button id="ocr-copy" class="primary">Copy Text</button>
+      </div>
+    </aside>
+
+    <footer class="statusbar">
+      <span id="dims"></span>
+      <span id="message"></span>
+      <div class="spacer"></div>
+      <button id="zoom-out" title="Zoom out">−</button>
+      <button id="zoom-label" title="Fit to window">100%</button>
+      <button id="zoom-in" title="Zoom in">+</button>
+    </footer>
+    <script type="module" src="./editor/main.ts"></script>
+  </body>
+</html>

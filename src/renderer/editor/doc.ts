@@ -1,0 +1,205 @@
+import { Canvas, FabricImage, FabricObject, util } from 'fabric'
+import type { Rect, SnapDoc } from '../../shared/types'
+
+// Fabric 7 defaults to centre origins; every position in this editor is top-left based.
+FabricObject.ownDefaults.originX = 'left'
+FabricObject.ownDefaults.originY = 'top'
+
+/** Custom properties persisted with each annotation. */
+export const CUSTOM_PROPS = ['snapKind', 'snapAsset']
+
+/** Prefix for image sources held in the asset table instead of inline. */
+const ASSET_REF = 'asset:'
+
+type SerializedObject = { snapAsset?: string; src?: string; [key: string]: unknown }
+
+export type SnapKind = 'arrow' | 'line' | 'rect' | 'ellipse' | 'text' | 'step' | 'highlight' | 'pen' | 'redact'
+
+export interface DocState {
+  width: number
+  height: number
+  bgLeft: number
+  bgTop: number
+  objects: unknown[]
+}
+
+/**
+ * The capture being edited: a locked background image plus annotation objects,
+ * shown at `zoom` while all coordinates stay in image pixels.
+ */
+export class EditorDoc {
+  readonly canvas: Canvas
+  width = 1
+  height = 1
+  zoom = 1
+  bg!: FabricImage
+  onLayout: () => void = () => undefined
+  /**
+   * PNG data for image annotations (redactions), keyed by their snapAsset id.
+   * Undo snapshots reference these instead of carrying a copy of every image each time.
+   */
+  private readonly assets = new Map<string, string>()
+
+  constructor(el: HTMLCanvasElement) {
+    this.canvas = new Canvas(el, {
+      preserveObjectStacking: true,
+      selectionColor: 'rgb(232 89 12 / 0.12)',
+      selectionBorderColor: '#e8590c',
+      uniformScaling: false,
+      // Hollow shapes are hit only on their stroke; this keeps thin strokes easy to grab.
+      targetFindTolerance: 8,
+      enableRetinaScaling: true
+    })
+  }
+
+  async loadImage(dataUrl: string): Promise<void> {
+    const bg = await FabricImage.fromURL(dataUrl)
+    this.setBackground(bg, 0, 0)
+    this.width = bg.width
+    this.height = bg.height
+  }
+
+  async loadDoc(doc: SnapDoc): Promise<void> {
+    const bg = await FabricImage.fromURL(doc.background.dataUrl)
+    this.setBackground(bg, doc.background.left, doc.background.top)
+    this.width = doc.width
+    this.height = doc.height
+    await this.setAnnotations(doc.objects)
+  }
+
+  private setBackground(bg: FabricImage, left: number, top: number): void {
+    bg.set({ left, top, selectable: false, evented: false, hoverCursor: 'default', objectCaching: false })
+    this.bg = bg
+    this.canvas.add(bg)
+    this.canvas.sendObjectToBack(bg)
+  }
+
+  annotations(): FabricObject[] {
+    // Transient guides (the crop box) are marked excludeFromExport and never saved.
+    return this.canvas.getObjects().filter((o) => o !== this.bg && !o.excludeFromExport)
+  }
+
+  async setAnnotations(serialized: unknown[]): Promise<void> {
+    for (const o of this.annotations()) this.canvas.remove(o)
+    const objects = await util.enlivenObjects<FabricObject>(serialized as object[])
+    for (const o of objects) this.canvas.add(o)
+    this.canvas.requestRenderAll()
+  }
+
+  /** Snapshot for undo: image annotations are stored as asset references. */
+  state(): DocState {
+    return {
+      width: this.width,
+      height: this.height,
+      bgLeft: this.bg.left,
+      bgTop: this.bg.top,
+      objects: this.annotations().map((o) => {
+        const json = o.toObject(CUSTOM_PROPS) as SerializedObject
+        if (json.snapAsset && json.src) {
+          if (!json.src.startsWith(ASSET_REF)) this.assets.set(json.snapAsset, json.src)
+          json.src = ASSET_REF + json.snapAsset
+        }
+        return json
+      })
+    }
+  }
+
+  async restore(state: DocState): Promise<void> {
+    this.canvas.discardActiveObject()
+    this.width = state.width
+    this.height = state.height
+    this.bg.set({ left: state.bgLeft, top: state.bgTop })
+    this.bg.setCoords()
+    await this.setAnnotations(this.inlineAssets(state.objects))
+    this.applyZoom(this.zoom)
+  }
+
+  /** Register image data for a new image annotation; returns its asset id. */
+  addAsset(dataUrl: string): string {
+    const id = crypto.randomUUID()
+    this.assets.set(id, dataUrl)
+    return id
+  }
+
+  private inlineAssets(objects: unknown[]): unknown[] {
+    return (objects as SerializedObject[]).map((o) =>
+      o.snapAsset && o.src?.startsWith(ASSET_REF) ? { ...o, src: this.assets.get(o.snapAsset) ?? '' } : o
+    )
+  }
+
+  /** Self-contained document for saving: every image is embedded. */
+  toSnapDoc(): SnapDoc {
+    const s = this.state()
+    return {
+      format: 'markcraft',
+      version: 1,
+      width: s.width,
+      height: s.height,
+      background: { dataUrl: this.bg.getSrc(), left: s.bgLeft, top: s.bgTop },
+      objects: this.inlineAssets(s.objects)
+    }
+  }
+
+  /** Render the document at 1:1 image pixels with no selection handles. */
+  flatten(): string {
+    const active = this.canvas.getActiveObject()
+    this.canvas.discardActiveObject()
+    this.canvas.renderAll()
+    const url = this.canvas.toDataURL({ format: 'png', multiplier: 1 / this.zoom, enableRetinaScaling: false })
+    if (active) this.canvas.setActiveObject(active)
+    this.canvas.requestRenderAll()
+    return url
+  }
+
+  /** Pixels of the original background under `r` (document coordinates). */
+  backgroundPixels(r: Rect): HTMLCanvasElement {
+    const out = document.createElement('canvas')
+    out.width = Math.max(1, Math.round(r.width))
+    out.height = Math.max(1, Math.round(r.height))
+    const ctx = out.getContext('2d')!
+    ctx.drawImage(
+      this.bg.getElement() as CanvasImageSource,
+      r.x - this.bg.left,
+      r.y - this.bg.top,
+      r.width,
+      r.height,
+      0,
+      0,
+      out.width,
+      out.height
+    )
+    return out
+  }
+
+  /** Shift everything so `r` becomes the new document bounds. */
+  crop(r: Rect): void {
+    const x = Math.round(Math.max(0, r.x))
+    const y = Math.round(Math.max(0, r.y))
+    const w = Math.round(Math.min(this.width - x, r.width))
+    const h = Math.round(Math.min(this.height - y, r.height))
+    if (w < 2 || h < 2) return
+    this.canvas.discardActiveObject()
+    for (const o of this.canvas.getObjects()) {
+      o.set({ left: o.left - x, top: o.top - y })
+      o.setCoords()
+    }
+    this.width = w
+    this.height = h
+    this.applyZoom(this.zoom)
+  }
+
+  applyZoom(zoom: number): void {
+    this.zoom = Math.min(8, Math.max(0.05, zoom))
+    this.canvas.setDimensions({
+      width: Math.round(this.width * this.zoom),
+      height: Math.round(this.height * this.zoom)
+    })
+    this.canvas.setZoom(this.zoom)
+    this.canvas.requestRenderAll()
+    this.onLayout()
+  }
+
+  fitZoom(availWidth: number, availHeight: number): number {
+    return Math.min(1, availWidth / this.width, availHeight / this.height)
+  }
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'"
+    />
+    <title>Scrolling Capture</title>
+    <link rel="stylesheet" href="./common/base.css" />
+  </head>
+  <body class="bar">
+    <div class="bar-inner">
+      <span id="status" class="bar-status">Click Start, then scroll the selected area slowly</span>
+      <button id="start" class="primary">Start</button>
+      <button id="done" class="primary" hidden>Done</button>
+      <button id="cancel" class="danger">Cancel</button>
+    </div>
+    <script type="module" src="./scroll/main.ts"></script>
+  </body>
+</html>

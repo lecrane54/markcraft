@@ -1,0 +1,112 @@
+:root {
+  --bg: #f4f4f6;
+  --panel: #ffffff;
+  --panel-2: #ececf0;
+  --border: #d6d6dc;
+  --text: #1d1d22;
+  --muted: #6b6b75;
+  --accent: #e8590c;
+  --accent-text: #ffffff;
+  --danger: #d6336c;
+  --radius: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1f22;
+    --panel: #2b2d31;
+    --panel-2: #36383e;
+    --border: #44464d;
+    --text: #ececf0;
+    --muted: #9a9ba3;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font: 13px/1.4 var(--font);
+  color: var(--text);
+  background: var(--bg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Floating control bars (recorder, scrolling capture) */
+body.bar {
+  background: transparent;
+}
+
+.bar-inner {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+  -webkit-app-region: drag;
+}
+
+.bar-inner button,
+.bar-inner label {
+  -webkit-app-region: no-drag;
+}
+
+.bar-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.bar-status strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}

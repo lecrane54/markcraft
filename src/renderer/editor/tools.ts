@@ -1,0 +1,411 @@
+import {
+  Circle,
+  Ellipse,
+  FabricImage,
+  FabricObject,
+  FabricText,
+  Group,
+  IText,
+  Path,
+  PencilBrush,
+  Point,
+  Rect,
+  Shadow,
+  type TPointerEventInfo
+} from 'fabric'
+import type { Rect as Box } from '../../shared/types'
+import type { EditorDoc, SnapKind } from './doc'
+
+export type ToolName =
+  | 'select'
+  | 'arrow'
+  | 'line'
+  | 'rect'
+  | 'ellipse'
+  | 'text'
+  | 'step'
+  | 'highlight'
+  | 'pen'
+  | 'redact'
+  | 'crop'
+
+export interface Style {
+  color: string
+  width: number
+  fontSize: number
+}
+
+const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+const CROP_COLOR = '#e8590c'
+
+const shadow = () => new Shadow({ color: 'rgba(0,0,0,0.35)', blur: 6, offsetX: 0, offsetY: 2 })
+
+const withAlpha = (hex: string, alpha: number) => {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`
+}
+
+/** Shaft plus a filled head, as one path, so arrows scale and move as a unit. */
+export function arrowPathData(x1: number, y1: number, x2: number, y2: number, width: number): string {
+  const angle = Math.atan2(y2 - y1, x2 - x1)
+  const head = Math.max(14, width * 3.6)
+  const spread = head * 0.62
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  const bx = x2 - head * cos
+  const by = y2 - head * sin
+  const lx = bx + spread * sin
+  const ly = by - spread * cos
+  const rx = bx - spread * sin
+  const ry = by + spread * cos
+  // Stop the shaft inside the head so the round cap doesn't poke through the tip.
+  const sx = x2 - head * 0.6 * cos
+  const sy = y2 - head * 0.6 * sin
+  return `M ${x1} ${y1} L ${sx} ${sy} M ${x2} ${y2} L ${lx} ${ly} L ${rx} ${ry} Z`
+}
+
+/** Blocky mosaic of `source`, used to redact sensitive content. */
+export function pixelate(source: HTMLCanvasElement, block: number): HTMLCanvasElement {
+  const small = document.createElement('canvas')
+  small.width = Math.max(1, Math.ceil(source.width / block))
+  small.height = Math.max(1, Math.ceil(source.height / block))
+  const sctx = small.getContext('2d')!
+  sctx.imageSmoothingQuality = 'medium'
+  sctx.drawImage(source, 0, 0, small.width, small.height)
+  const out = document.createElement('canvas')
+  out.width = source.width
+  out.height = source.height
+  const octx = out.getContext('2d')!
+  octx.imageSmoothingEnabled = false
+  octx.drawImage(small, 0, 0, out.width, out.height)
+  return out
+}
+
+const kind = (o: FabricObject) => (o as FabricObject & { snapKind?: SnapKind }).snapKind
+
+export class Tools {
+  tool: ToolName = 'arrow'
+  private drag: { start: Point; obj: FabricObject | null } | null = null
+  private cropBox: Rect | null = null
+  onCommit: () => void = () => undefined
+  onCropChange: (active: boolean) => void = () => undefined
+
+  constructor(
+    private readonly doc: EditorDoc,
+    private readonly style: () => Style
+  ) {
+    const c = doc.canvas
+    c.on('mouse:down', (o) => this.down(o))
+    c.on('mouse:move', (o) => this.move(o))
+    c.on('mouse:up', () => this.up())
+    c.on('path:created', ({ path }) => {
+      path.set({ snapKind: 'pen', perPixelTargetFind: true } as Partial<Path>)
+      this.onCommit()
+    })
+    c.on('text:editing:exited', ({ target }) => {
+      if (!(target as IText).text.trim()) c.remove(target)
+      this.onCommit()
+    })
+  }
+
+  setTool(tool: ToolName): void {
+    if (this.tool === 'crop' && tool !== 'crop') this.cancelCrop()
+    this.tool = tool
+    const c = this.doc.canvas
+    const { color, width } = this.style()
+    c.isDrawingMode = tool === 'pen'
+    if (tool === 'pen') {
+      const brush = new PencilBrush(c)
+      brush.color = color
+      brush.width = width
+      brush.decimate = 2
+      c.freeDrawingBrush = brush
+    }
+    c.selection = tool === 'select'
+    c.defaultCursor = tool === 'select' ? 'default' : tool === 'text' ? 'text' : 'crosshair'
+    c.discardActiveObject()
+    c.requestRenderAll()
+  }
+
+  /** Update the pen brush and restyle any selected annotations. */
+  applyStyle(): void {
+    const { color, width, fontSize } = this.style()
+    const c = this.doc.canvas
+    if (c.freeDrawingBrush) {
+      c.freeDrawingBrush.color = color
+      c.freeDrawingBrush.width = width
+    }
+    const selected = c.getActiveObjects()
+    for (const o of selected) {
+      switch (kind(o)) {
+        case 'arrow':
+          o.set({ stroke: color, fill: color })
+          break
+        case 'line':
+        case 'rect':
+        case 'ellipse':
+        case 'pen':
+          o.set({ stroke: color, strokeWidth: width })
+          break
+        case 'highlight':
+          o.set({ fill: withAlpha(color, 0.4) })
+          break
+        case 'text':
+          o.set({ fill: color, fontSize } as Partial<IText>)
+          break
+        case 'step':
+          ;(o as Group).getObjects()[0].set({ fill: color })
+          o.set({ dirty: true })
+          break
+      }
+    }
+    if (selected.length) {
+      c.requestRenderAll()
+      this.onCommit()
+    }
+  }
+
+  private point(o: TPointerEventInfo): Point {
+    return this.doc.canvas.getScenePoint(o.e)
+  }
+
+  private down(o: TPointerEventInfo): void {
+    const tool = this.tool
+    if (tool === 'select' || tool === 'pen') return
+    // Clicking an existing annotation selects/moves it instead of drawing.
+    if (o.target && o.target !== this.doc.bg && o.target !== this.cropBox) return
+    const p = this.point(o)
+    if (tool === 'text') return this.addText(p)
+    if (tool === 'step') return this.addStep(p)
+    if (tool === 'crop' && this.cropBox) {
+      this.doc.canvas.remove(this.cropBox)
+      this.cropBox = null
+    }
+    this.drag = { start: p, obj: null }
+  }
+
+  private move(o: TPointerEventInfo): void {
+    if (!this.drag) return
+    const c = this.doc.canvas
+    const { start } = this.drag
+    const p = this.point(o)
+    const { color, width } = this.style()
+    const box: Box = {
+      x: Math.min(start.x, p.x),
+      y: Math.min(start.y, p.y),
+      width: Math.abs(p.x - start.x),
+      height: Math.abs(p.y - start.y)
+    }
+    let obj = this.drag.obj
+
+    switch (this.tool) {
+      case 'arrow':
+      case 'line': {
+        // Paths can't be reshaped in place; rebuild while dragging.
+        if (obj) c.remove(obj)
+        const arrow = this.tool === 'arrow'
+        obj = new Path(
+          arrow ? arrowPathData(start.x, start.y, p.x, p.y, width) : `M ${start.x} ${start.y} L ${p.x} ${p.y}`,
+          {
+            stroke: color,
+            fill: arrow ? color : '',
+            strokeWidth: width,
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round',
+            shadow: shadow(),
+            perPixelTargetFind: true,
+            snapKind: this.tool
+          } as Partial<Path>
+        )
+        c.add(obj)
+        break
+      }
+      case 'rect':
+      case 'highlight':
+      case 'redact':
+      case 'crop':
+        if (!obj) {
+          obj = new Rect(this.rectStyle(this.tool, color, width))
+          c.add(obj)
+        }
+        obj.set({ left: box.x, top: box.y, width: box.width, height: box.height })
+        break
+      case 'ellipse':
+        if (!obj) {
+          obj = new Ellipse({
+            fill: 'transparent',
+            stroke: color,
+            strokeWidth: width,
+            strokeUniform: true,
+            shadow: shadow(),
+            perPixelTargetFind: true,
+            snapKind: 'ellipse'
+          } as Partial<Ellipse>)
+          c.add(obj)
+        }
+        obj.set({ left: box.x, top: box.y, rx: box.width / 2, ry: box.height / 2 } as Partial<Ellipse>)
+        break
+    }
+    if (obj) obj.setCoords()
+    this.drag.obj = obj
+    c.requestRenderAll()
+  }
+
+  private rectStyle(tool: ToolName, color: string, width: number): Partial<Rect> {
+    switch (tool) {
+      case 'highlight':
+        return {
+          fill: withAlpha(color, 0.4),
+          strokeWidth: 0,
+          globalCompositeOperation: 'multiply',
+          snapKind: 'highlight'
+        } as Partial<Rect>
+      case 'redact':
+        return { fill: 'rgba(0,0,0,0.25)', strokeWidth: 0, evented: false }
+      case 'crop':
+        return {
+          fill: 'transparent',
+          stroke: CROP_COLOR,
+          strokeWidth: 2,
+          strokeDashArray: [8, 6],
+          strokeUniform: true,
+          evented: false,
+          excludeFromExport: true
+        }
+      default:
+        return {
+          fill: 'transparent',
+          stroke: color,
+          strokeWidth: width,
+          strokeUniform: true,
+          shadow: shadow(),
+          perPixelTargetFind: true,
+          snapKind: 'rect'
+        } as Partial<Rect>
+    }
+  }
+
+  private up(): void {
+    const drag = this.drag
+    this.drag = null
+    if (!drag?.obj) return
+    const c = this.doc.canvas
+    const obj = drag.obj
+    const r = obj.getBoundingRect()
+    if (r.width < 3 && r.height < 3) {
+      c.remove(obj)
+      return
+    }
+    if (this.tool === 'crop') {
+      this.cropBox = obj as Rect
+      this.onCropChange(true)
+      return
+    }
+    if (this.tool === 'redact') {
+      c.remove(obj)
+      void this.addRedaction({ x: obj.left, y: obj.top, width: obj.width, height: obj.height })
+      return
+    }
+    c.setActiveObject(obj)
+    c.requestRenderAll()
+    this.onCommit()
+  }
+
+  private async addRedaction(box: Box): Promise<void> {
+    const block = Math.max(8, Math.round(Math.max(box.width, box.height) / 24))
+    // Encode once. An <img>-backed image reports its src as-is, whereas a
+    // <canvas>-backed one re-encodes a PNG every time the document is snapshotted.
+    const dataUrl = pixelate(this.doc.backgroundPixels(box), block).toDataURL('image/png')
+    const img = await FabricImage.fromURL(dataUrl)
+    img.set({ left: box.x, top: box.y, snapKind: 'redact', snapAsset: this.doc.addAsset(dataUrl) } as Partial<FabricImage>)
+    this.doc.canvas.add(img)
+    this.doc.canvas.setActiveObject(img)
+    this.onCommit()
+  }
+
+  private addText(p: Point): void {
+    const { color, fontSize } = this.style()
+    const text = new IText('Text', {
+      left: p.x,
+      top: p.y - fontSize / 2,
+      fontFamily: FONT,
+      fontWeight: '600',
+      fontSize,
+      fill: color,
+      shadow: shadow(),
+      snapKind: 'text'
+    } as Partial<IText>)
+    const c = this.doc.canvas
+    c.add(text)
+    c.setActiveObject(text)
+    text.enterEditing()
+    text.selectAll()
+    c.requestRenderAll()
+  }
+
+  private nextStepNumber(): number {
+    let max = 0
+    for (const o of this.doc.annotations()) {
+      if (kind(o) !== 'step') continue
+      const label = (o as Group).getObjects()[1] as FabricText | undefined
+      max = Math.max(max, Number(label?.text) || 0)
+    }
+    return max + 1
+  }
+
+  private addStep(p: Point): void {
+    const { color, width } = this.style()
+    const radius = Math.max(16, width * 3.2)
+    const n = this.nextStepNumber()
+    const circle = new Circle({
+      radius,
+      left: p.x,
+      top: p.y,
+      originX: 'center',
+      originY: 'center',
+      fill: color,
+      stroke: '#ffffff',
+      strokeWidth: Math.max(2, radius / 8)
+    })
+    const label = new FabricText(String(n), {
+      left: p.x,
+      top: p.y,
+      originX: 'center',
+      originY: 'center',
+      fontFamily: FONT,
+      fontWeight: '700',
+      fontSize: radius * (n > 9 ? 1.0 : 1.2),
+      fill: '#ffffff'
+    })
+    const group = new Group([circle, label], { shadow: shadow(), snapKind: 'step' } as Partial<Group>)
+    const c = this.doc.canvas
+    c.add(group)
+    c.setActiveObject(group)
+    c.requestRenderAll()
+    this.onCommit()
+  }
+
+  // ---- crop -------------------------------------------------------------------
+
+  applyCrop(): void {
+    const box = this.cropBox
+    if (!box) return
+    this.doc.canvas.remove(box)
+    this.cropBox = null
+    this.doc.crop({ x: box.left, y: box.top, width: box.width, height: box.height })
+    this.onCropChange(false)
+    this.onCommit()
+  }
+
+  cancelCrop(): void {
+    if (!this.cropBox) return
+    this.doc.canvas.remove(this.cropBox)
+    this.cropBox = null
+    this.doc.canvas.requestRenderAll()
+    this.onCropChange(false)
+  }
+
+  get cropping(): boolean {
+    return this.cropBox !== null
+  }
+}
