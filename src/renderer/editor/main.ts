@@ -18,6 +18,7 @@ const TOOLS: { name: ToolName; label: string; key: string }[] = [
   { name: 'highlight', label: 'Highlight', key: 'h' },
   { name: 'pen', label: 'Pen', key: 'p' },
   { name: 'redact', label: 'Pixelate', key: 'b' },
+  { name: 'block', label: 'Redact (solid box)', key: 'x' },
   { name: 'crop', label: 'Crop', key: 'c' }
 ]
 
@@ -295,7 +296,9 @@ async function start(): Promise<void> {
   selectTool('arrow')
   setColor(style.color)
   new ResizeObserver(() => {
-    if (autoFit) fit()
+    // Refit on the next frame: resizing the canvas inside the callback would
+    // trigger another observation in the same frame.
+    if (autoFit) requestAnimationFrame(fit)
   }).observe(stage)
 }
 

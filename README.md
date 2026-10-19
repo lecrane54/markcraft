@@ -15,8 +15,10 @@ annotate it with arrows, boxes, numbered steps, highlights and redactions.
   screen. The screen freezes while you select, with a magnifier and live pixel
   size for precise edges.
 - **Annotate:** arrows, lines, rectangles, ellipses, text, auto-numbered steps,
-  highlighter, freehand pen, pixelate for redacting sensitive details, and crop.
-  Full undo and redo.
+  highlighter, freehand pen and crop, with full undo and redo.
+- **Redact safely:** cover sensitive details with a solid box, or pixelate them
+  with large, noise-randomised blocks that resist unpixelation tools. Exports
+  and saved files only contain the redacted pixels (see below).
 - **Scrolling capture:** select a scrolling area, scroll, and get one tall image.
   Sticky headers and footers appear once, not on every screen.
 - **Grab text (OCR):** pull the text out of any capture to copy and paste. It
@@ -83,7 +85,8 @@ On macOS, ⌘⇧3/4/5 stay with the built-in screenshot tool.
 | L | Line | | P | Pen |
 | R | Rectangle | | B | Pixelate (redact) |
 | E | Ellipse | | C | Crop (drag, then Enter) |
-| T | Text | | Delete | Remove the selection |
+| T | Text | | X | Redact (solid box) |
+| | | | Delete | Remove the selection |
 
 | macOS | Windows / Linux | Action |
 | --- | --- | --- |
@@ -93,10 +96,24 @@ On macOS, ⌘⇧3/4/5 stay with the built-in screenshot tool.
 | ⌘S / ⇧⌘S | Ctrl+S / Ctrl+Shift+S | Save / Save As (PNG, JPEG or editable `.markcraft`) |
 | ⌘0 / ⌘9 | Ctrl+0 / Ctrl+9 | Actual size / fit to window |
 
+### Redaction and what gets saved
+
+Inside the editor, redactions and crops can still be moved and undone. Everything
+that leaves the editor is final:
+
+- **Copy, PNG and JPEG** contain only what you see.
+- **`.markcraft` files** keep your other annotations editable, but the image is
+  cut to the cropped area and every redaction is burned into it. Whoever you
+  send the file to can't move a redaction aside or undo the crop.
+- For passwords, keys and personal details, prefer the **solid box** (X).
+  Pixelation is much harder to reverse than in most tools, but a solid box
+  leaves nothing at all.
+
 ### Where files go
 
-- Every capture's original is kept in `Pictures/Markcraft`. You can turn this off
-  in the tray menu under **Auto-save Captures**.
+- Every capture's **original, unredacted** image is kept in `Pictures/Markcraft`.
+  If you capture sensitive things, turn this off in the tray menu under
+  **Auto-save Captures**.
 - Recordings are saved to `Movies/Markcraft` (macOS) or `Videos/Markcraft`
   (Windows/Linux).
 

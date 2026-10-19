@@ -1,7 +1,9 @@
 // Smoke test: open a generated image in the editor, draw with synthetic
-// pointer input, and save a screenshot of the window.
+// pointer input, check undo/redo, crop and save a .markcraft file (checking
+// that redactions and the cropped-away area don't survive in it), and save a
+// screenshot of the window.
 // Usage: npm run build && npx electron test/smoke.cjs <out.png>
-const { app, nativeImage } = require('electron')
+const { app, dialog, nativeImage } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -48,8 +50,11 @@ const drawScript = `(async () => {
   tool('e'); await drag(860, 380, 1100, 560)
   tool('h'); await drag(120, 80, 420, 125)
   tool('b'); await drag(500, 420, 760, 520)
+  tool('x'); await drag(900, 100, 1100, 200)
   tool('n'); await drag(560, 180, 560, 180); await drag(700, 240, 700, 240)
   tool('v')
+  window.__drag = drag
+  window.__tool = tool
   return document.title + ' | ' + document.getElementById('dims').textContent + ' | ' + document.getElementById('zoom-label').textContent
 })()`
 
@@ -63,6 +68,42 @@ const canvasPixels = async (win) =>
  * re-rasterised, so faint anti-aliasing and shadow edges differ by design
  * (~0.01%); one missing step badge alone changes ~0.1%.
  */
+// Crop applied before saving, in sample-image pixels.
+const CROP = { x: 100, y: 50, width: 1050, height: 600 }
+
+/** The saved file must hold no redaction layers and no pixels outside the crop or under a redaction. */
+function verifySaved(file) {
+  const doc = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const kinds = doc.objects.map((o) => o.snapKind)
+  if (kinds.some((k) => k === 'redact' || k === 'block')) throw new Error(`redaction layers saved: ${kinds}`)
+  for (const k of ['arrow', 'rect', 'ellipse', 'highlight', 'step']) {
+    if (!kinds.includes(k)) throw new Error(`annotation lost on save: ${k}`)
+  }
+  const bg = nativeImage.createFromDataURL(doc.background.dataUrl)
+  const size = bg.getSize()
+  if (size.width !== CROP.width || size.height !== CROP.height || doc.width !== CROP.width) {
+    throw new Error(`saved background is ${size.width}×${size.height}, expected the ${CROP.width}×${CROP.height} crop`)
+  }
+  const px = bg.toBitmap()
+  // Interior of a sample-space box (with a margin for rounding at the edges).
+  const each = (x0, y0, x1, y1, fn) => {
+    for (let y = y0 + 6; y < y1 - 6; y++) {
+      for (let x = x0 + 6; x < x1 - 6; x++) fn((y - CROP.y) * size.width + (x - CROP.x), y * W + x)
+    }
+  }
+  let notSolid = 0
+  each(900, 100, 1100, 200, (i) => (notSolid += px[i * 4] === 17 && px[i * 4 + 1] === 17 && px[i * 4 + 2] === 17 ? 0 : 1))
+  if (notSolid) throw new Error(`${notSolid} pixels under the solid redaction aren't solid`)
+  let original = 0
+  let total = 0
+  each(500, 420, 760, 520, (i, j) => {
+    total++
+    if (px[i * 4] === buf[j * 4] && px[i * 4 + 1] === buf[j * 4 + 1] && px[i * 4 + 2] === buf[j * 4 + 2]) original++
+  })
+  console.log(`saved .markcraft: ${size.width}×${size.height}, layers [${kinds.join(', ')}], ${((original / total) * 100).toFixed(1)}% of pixelated pixels match the original`)
+  if (original / total > 0.2) throw new Error('pixelated area still matches the original')
+}
+
 function changedShare(a, b, threshold = 48) {
   const pa = a.toBitmap()
   const pb = b.toBitmap()
@@ -102,6 +143,19 @@ app.on('browser-window-created', (_e, win) => {
       console.log(`undo/redo: undo changed ${(afterUndo * 100).toFixed(2)}% of pixels, redo left ${(afterRedo * 100).toFixed(3)}% different`)
       if (afterUndo < 0.001) throw new Error('undo did not remove the last actions')
       if (afterRedo > 0.0005) throw new Error('redo did not restore the drawing')
+
+      // Crop, then Save As .markcraft through the real menu path (dialog stubbed).
+      const saved = path.join(path.dirname(sample), 'saved.markcraft')
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: saved })
+      await win.webContents.executeJavaScript(`(async () => {
+        __tool('c')
+        await __drag(${CROP.x}, ${CROP.y}, ${CROP.x + CROP.width}, ${CROP.y + CROP.height})
+        __tool('Enter')
+        await new Promise((r) => setTimeout(r, 200))
+      })()`)
+      win.webContents.send('menu', 'saveAs')
+      for (let i = 0; i < 40 && !fs.existsSync(saved); i++) await pause()
+      verifySaved(saved)
       fs.writeFileSync(out, (await win.webContents.capturePage()).toPNG())
       console.log('screenshot:', out)
     } catch (err) {

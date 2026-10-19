@@ -180,6 +180,11 @@ async function captureOverlay(sample) {
 }
 
 app.whenReady().then(async () => {
+  // Fail loudly rather than hang if a step never completes.
+  setTimeout(() => {
+    console.error('screenshots failed: timed out after 2 minutes')
+    app.exit(1)
+  }, 120_000).unref()
   try {
     fs.mkdirSync(OUT, { recursive: true })
     await wait(1500) // let the app finish starting (tray, overlay pool)

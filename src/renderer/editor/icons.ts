@@ -13,6 +13,7 @@ export const icons = {
   highlight: svg('<path d="M4 15.5h12"/><path d="M6.5 12.5l6-8 3 2.2-6 8H6.5z"/>'),
   pen: svg('<path d="M3.5 16.5c2-1 2.5-4 5-4s2 3 4.5 2.5 3-4 3.5-6"/>'),
   redact: svg('<rect x="3.5" y="3.5" width="13" height="13" rx="1.5"/><path d="M3.5 8h13M3.5 12.5h13M8 3.5v13M12.5 3.5v13"/>'),
+  block: svg('<rect x="3.5" y="6" width="13" height="8" rx="1" fill="currentColor"/>'),
   crop: svg('<path d="M6 2.5V14h11.5"/><path d="M2.5 6H14v11.5"/>'),
   undo: svg('<path d="M7 5L3.5 8.5 7 12"/><path d="M3.5 8.5h8a4.5 4.5 0 010 9H9"/>'),
   redo: svg('<path d="M13 5l3.5 3.5L13 12"/><path d="M16.5 8.5h-8a4.5 4.5 0 000 9H11"/>'),

@@ -11,9 +11,25 @@ export const CUSTOM_PROPS = ['snapKind', 'snapAsset']
 /** Prefix for image sources held in the asset table instead of inline. */
 const ASSET_REF = 'asset:'
 
-type SerializedObject = { snapAsset?: string; src?: string; [key: string]: unknown }
+type SerializedObject = { snapKind?: string; snapAsset?: string; src?: string; [key: string]: unknown }
 
-export type SnapKind = 'arrow' | 'line' | 'rect' | 'ellipse' | 'text' | 'step' | 'highlight' | 'pen' | 'redact'
+/** Pixelate and solid-box redactions, live or serialized. */
+const isRedaction = (o: { snapKind?: string } | FabricObject) => {
+  const kind = (o as { snapKind?: string }).snapKind
+  return kind === 'redact' || kind === 'block'
+}
+
+export type SnapKind =
+  | 'arrow'
+  | 'line'
+  | 'rect'
+  | 'ellipse'
+  | 'text'
+  | 'step'
+  | 'highlight'
+  | 'pen'
+  | 'redact'
+  | 'block'
 
 export interface DocState {
   width: number
@@ -127,17 +143,47 @@ export class EditorDoc {
     )
   }
 
-  /** Self-contained document for saving: every image is embedded. */
+  /**
+   * Self-contained document for saving. Nothing hidden in the editor survives
+   * into the file: the background is cut to the cropped area and every
+   * redaction is burned into it, so recipients can't move a redaction aside
+   * or undo a crop to see the original.
+   */
   toSnapDoc(): SnapDoc {
     const s = this.state()
+    const redactions = this.annotations().filter(isRedaction)
     return {
       format: 'markcraft',
       version: 1,
       width: s.width,
       height: s.height,
-      background: { dataUrl: this.bg.getSrc(), left: s.bgLeft, top: s.bgTop },
-      objects: this.inlineAssets(s.objects)
+      background: { dataUrl: this.bakedBackground(redactions), left: 0, top: 0 },
+      objects: this.inlineAssets(s.objects.filter((o) => !isRedaction(o as SerializedObject)))
     }
+  }
+
+  /** The visible background with redactions painted on, as a PNG data URL. */
+  private bakedBackground(redactions: FabricObject[]): string {
+    const out = document.createElement('canvas')
+    out.width = this.width
+    out.height = this.height
+    const ctx = out.getContext('2d')!
+    ctx.drawImage(this.bg.getElement() as CanvasImageSource, this.bg.left, this.bg.top)
+    for (const o of redactions) {
+      ctx.save()
+      // Same transform Fabric renders with (object centre at the origin), so
+      // moved, resized or rotated redactions land exactly where they appear.
+      const [a, b, c, d, e, f] = o.calcTransformMatrix()
+      ctx.transform(a, b, c, d, e, f)
+      if (o instanceof FabricImage) {
+        ctx.drawImage(o.getElement() as CanvasImageSource, -o.width / 2, -o.height / 2, o.width, o.height)
+      } else {
+        ctx.fillStyle = String(o.fill)
+        ctx.fillRect(-o.width / 2, -o.height / 2, o.width, o.height)
+      }
+      ctx.restore()
+    }
+    return out.toDataURL('image/png')
   }
 
   /** Render the document at 1:1 image pixels with no selection handles. */

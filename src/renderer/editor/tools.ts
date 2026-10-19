@@ -15,6 +15,7 @@ import {
 } from 'fabric'
 import type { Rect as Box } from '../../shared/types'
 import type { EditorDoc, SnapKind } from './doc'
+import { blockSize, pixelate } from './redact'
 
 export type ToolName =
   | 'select'
@@ -27,6 +28,7 @@ export type ToolName =
   | 'highlight'
   | 'pen'
   | 'redact'
+  | 'block'
   | 'crop'
 
 export interface Style {
@@ -37,6 +39,7 @@ export interface Style {
 
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
 const CROP_COLOR = '#e8590c'
+const SOLID_REDACT = '#111111'
 
 const shadow = () => new Shadow({ color: 'rgba(0,0,0,0.35)', blur: 6, offsetX: 0, offsetY: 2 })
 
@@ -62,23 +65,6 @@ export function arrowPathData(x1: number, y1: number, x2: number, y2: number, wi
   const sx = x2 - head * 0.6 * cos
   const sy = y2 - head * 0.6 * sin
   return `M ${x1} ${y1} L ${sx} ${sy} M ${x2} ${y2} L ${lx} ${ly} L ${rx} ${ry} Z`
-}
-
-/** Blocky mosaic of `source`, used to redact sensitive content. */
-export function pixelate(source: HTMLCanvasElement, block: number): HTMLCanvasElement {
-  const small = document.createElement('canvas')
-  small.width = Math.max(1, Math.ceil(source.width / block))
-  small.height = Math.max(1, Math.ceil(source.height / block))
-  const sctx = small.getContext('2d')!
-  sctx.imageSmoothingQuality = 'medium'
-  sctx.drawImage(source, 0, 0, small.width, small.height)
-  const out = document.createElement('canvas')
-  out.width = source.width
-  out.height = source.height
-  const octx = out.getContext('2d')!
-  octx.imageSmoothingEnabled = false
-  octx.drawImage(small, 0, 0, out.width, out.height)
-  return out
 }
 
 const kind = (o: FabricObject) => (o as FabricObject & { snapKind?: SnapKind }).snapKind
@@ -149,6 +135,9 @@ export class Tools {
           break
         case 'highlight':
           o.set({ fill: withAlpha(color, 0.4) })
+          break
+        case 'block':
+          o.set({ fill: color })
           break
         case 'text':
           o.set({ fill: color, fontSize } as Partial<IText>)
@@ -223,6 +212,7 @@ export class Tools {
       case 'rect':
       case 'highlight':
       case 'redact':
+      case 'block':
       case 'crop':
         if (!obj) {
           obj = new Rect(this.rectStyle(this.tool, color, width))
@@ -262,6 +252,9 @@ export class Tools {
         } as Partial<Rect>
       case 'redact':
         return { fill: 'rgba(0,0,0,0.25)', strokeWidth: 0, evented: false }
+      case 'block':
+        // Solid and fully opaque: nothing of what's underneath survives.
+        return { fill: SOLID_REDACT, strokeWidth: 0, snapKind: 'block' } as Partial<Rect>
       case 'crop':
         return {
           fill: 'transparent',
@@ -315,10 +308,14 @@ export class Tools {
   }
 
   private async addRedaction(box: Box): Promise<void> {
-    const block = Math.max(8, Math.round(Math.max(box.width, box.height) / 24))
+    const source = this.doc.backgroundPixels(box)
+    const ctx = source.getContext('2d')!
+    const pixels = ctx.getImageData(0, 0, source.width, source.height)
+    const out = pixelate(pixels, blockSize(source.width, source.height))
+    ctx.putImageData(new ImageData(out.data as Uint8ClampedArray<ArrayBuffer>, out.width, out.height), 0, 0)
     // Encode once. An <img>-backed image reports its src as-is, whereas a
     // <canvas>-backed one re-encodes a PNG every time the document is snapshotted.
-    const dataUrl = pixelate(this.doc.backgroundPixels(box), block).toDataURL('image/png')
+    const dataUrl = source.toDataURL('image/png')
     const img = await FabricImage.fromURL(dataUrl)
     img.set({ left: box.x, top: box.y, snapKind: 'redact', snapAsset: this.doc.addAsset(dataUrl) } as Partial<FabricImage>)
     this.doc.canvas.add(img)
