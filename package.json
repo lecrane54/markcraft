@@ -1,7 +1,7 @@
 {
   "name": "markcraft",
   "productName": "Markcraft",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Capture, mark up and share your screen: screenshots, annotation, scrolling capture, OCR and screen recording.",
   "homepage": "https://github.com/lecrane54/markcraft",
   "repository": {
