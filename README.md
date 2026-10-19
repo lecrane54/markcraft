@@ -100,6 +100,11 @@ On macOS, ⌘⇧3/4/5 stay with the built-in screenshot tool.
 - Recordings are saved to `Movies/Markcraft` (macOS) or `Videos/Markcraft`
   (Windows/Linux).
 
+## Privacy
+
+Markcraft has no accounts, telemetry or analytics. Captures, recordings and OCR
+all stay on your computer unless you copy or save them somewhere yourself.
+
 ## Status
 
 Markcraft is new (0.1). Capture, the editor, OCR and packaging are tested on
@@ -171,3 +176,16 @@ The app icon is generated from [`build/icon.svg`](build/icon.svg) with
 `npm run icon`. Builds ship only English Electron UI strings and the three
 tesseract engine variants Node actually loads, which keeps installers around
 100–125 MB.
+
+## License
+
+Markcraft is released under the [MIT License](LICENSE). It includes open-source
+components under their own permissive licenses (MIT, BSD, Apache-2.0 and
+similar), listed with their full texts in
+[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). The app shows them under
+**Help ▸ Open-Source Licenses**. Regenerate the file with `npm run notices` after
+changing dependencies; CI fails if it's out of date.
+
+Markcraft is an independent project and isn't affiliated with or endorsed by
+any other screenshot or screen-recording product or company. macOS, Windows and
+Linux are trademarks of their respective owners.

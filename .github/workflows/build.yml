@@ -34,7 +34,21 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Third-party notices are up to date
+        shell: bash
+        run: |
+          npm run notices
+          git diff --exit-code THIRD_PARTY_NOTICES.txt || {
+            echo "::error::THIRD_PARTY_NOTICES.txt is stale. Run 'npm run notices' and commit it."
+            exit 1
+          }
       - run: npx electron-vite build
+
+      # The macOS bundle copies Electron's and Chromium's license files from the
+      # Electron package, which npm ci doesn't download by itself.
+      - name: Fetch Electron (macOS license files)
+        if: matrix.platform == 'mac'
+        run: npx install-electron
 
       - name: Package (macOS)
         if: matrix.platform == 'mac'

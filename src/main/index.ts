@@ -9,6 +9,7 @@ import {
   type MenuItemConstructorOptions
 } from 'electron'
 import { existsSync, mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import type { MenuCommand } from '../shared/types'
 import {
   captureFullScreen,
@@ -100,6 +101,8 @@ function trayMenu(): Menu {
     },
     settingToggle('Auto-save Captures', 'autoSave'),
     { type: 'separator' },
+    { label: 'About Markcraft', click: () => (process.platform === 'darwin' ? app.showAboutPanel() : void shell.openExternal(HOMEPAGE)) },
+    { label: 'Open-Source Licenses', click: () => void openNotices() },
     { label: 'Quit Markcraft', role: 'quit' }
   ])
 }
@@ -155,9 +158,28 @@ function appMenu(): Menu {
         { role: 'toggleDevTools' }
       ]
     },
-    { role: 'windowMenu' }
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [
+        { label: 'Markcraft on GitHub', click: () => void shell.openExternal(HOMEPAGE) },
+        { label: 'Report a Problem…', click: () => void shell.openExternal(`${HOMEPAGE}/issues`) },
+        { type: 'separator' },
+        { label: 'Open-Source Licenses', click: () => void openNotices() }
+      ]
+    }
   ]
   return Menu.buildFromTemplate(template)
+}
+
+const HOMEPAGE = 'https://github.com/lecrane54/markcraft'
+
+/** Third-party license texts, shipped beside the app (see scripts/notices.cjs). */
+async function openNotices(): Promise<void> {
+  const file = app.isPackaged
+    ? join(process.resourcesPath, 'THIRD_PARTY_NOTICES.txt')
+    : join(app.getAppPath(), 'THIRD_PARTY_NOTICES.txt')
+  await shell.openPath(file)
 }
 
 let tray: Tray | null = null
@@ -191,6 +213,12 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     app.setName('Markcraft')
+    app.setAboutPanelOptions({
+      applicationName: 'Markcraft',
+      copyright: 'Copyright © 2026 Kyle Lefebvre. MIT License.',
+      credits: 'Built with Electron, Fabric.js and Tesseract. Licenses: Help ▸ Open-Source Licenses.',
+      website: HOMEPAGE
+    })
     handleMediaScheme()
     installDisplayMediaHandler()
     registerShortcuts()

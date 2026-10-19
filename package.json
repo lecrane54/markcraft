@@ -2,10 +2,16 @@
   "name": "markcraft",
   "productName": "Markcraft",
   "version": "0.1.0",
-  "description": "Screen capture, annotation, scrolling capture, OCR and screen recording.",
+  "description": "Capture, mark up and share your screen: screenshots, annotation, scrolling capture, OCR and screen recording.",
+  "homepage": "https://github.com/lecrane54/markcraft",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lecrane54/markcraft.git"
+  },
+  "bugs": "https://github.com/lecrane54/markcraft/issues",
   "main": "./out/main/index.js",
-  "author": "klefe",
-  "license": "UNLICENSED",
+  "author": "Kyle Lefebvre",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
@@ -20,7 +26,8 @@
     "dist:linux": "electron-vite build && electron-builder --linux",
     "pack": "electron-vite build && electron-builder --dir -c.mac.identity=- -c.mac.hardenedRuntime=false",
     "dist:mac:unsigned": "electron-vite build && electron-builder --mac -c.mac.identity=- -c.mac.hardenedRuntime=false",
-    "screenshots": "electron scripts/screenshots.cjs"
+    "screenshots": "electron scripts/screenshots.cjs",
+    "notices": "node scripts/notices.cjs"
   },
   "dependencies": {
     "@tesseract.js-data/eng": "1.0.0",
@@ -38,7 +45,7 @@
   "build": {
     "appId": "com.klefe.markcraft",
     "productName": "Markcraft",
-    "copyright": "Copyright © 2026 klefe",
+    "copyright": "Copyright © 2026 Kyle Lefebvre",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -76,7 +83,17 @@
       "extendInfo": {
         "NSCameraUsageDescription": "Markcraft uses the camera to add an optional webcam overlay to screen recordings.",
         "NSMicrophoneUsageDescription": "Markcraft uses the microphone to record narration with screen recordings."
-      }
+      },
+      "extraResources": [
+        {
+          "from": "node_modules/electron/dist/LICENSE",
+          "to": "LICENSE.electron.txt"
+        },
+        {
+          "from": "node_modules/electron/dist/LICENSES.chromium.html",
+          "to": "LICENSES.chromium.html"
+        }
+      ]
     },
     "win": {
       "target": [
@@ -122,6 +139,14 @@
         "filter": [
           "*.traineddata.gz"
         ]
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.txt",
+        "to": "THIRD_PARTY_NOTICES.txt"
+      },
+      {
+        "from": "LICENSE",
+        "to": "LICENSE.txt"
       }
     ]
   },
